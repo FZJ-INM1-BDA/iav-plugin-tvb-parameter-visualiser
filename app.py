@@ -16,7 +16,7 @@ app.add_subapp('/data', data_app)
 for route in list(app.router.routes()):
   cors.add(route)
 
-PORT = os.getenv(PORT) or 1234
+PORT = os.getenv('PORT') or 1234
 
 if __name__ == '__main__':
   web.run_app(app, port=PORT)
