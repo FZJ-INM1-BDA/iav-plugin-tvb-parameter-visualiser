@@ -3,7 +3,7 @@ import os
 
 PLUGIN_NAME='fzj.xg.tvb_plugin'
 DISPLAY_NAME='TVB Parameter Visualiser (alpha)'
-HOSTNAME='http://localhost:1234'
+HOSTNAME=os.getenv('HOSTNAME') or 'http://localhost:1234'
 
 def replace_var(input):
   return input.replace('$$PLUGIN_NAME$$', PLUGIN_NAME).replace('$$HOSTNAME$$', HOSTNAME)
