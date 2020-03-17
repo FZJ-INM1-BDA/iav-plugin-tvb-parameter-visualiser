@@ -1,5 +1,6 @@
 from aiohttp import web
 import aiohttp_cors
+import os
 
 from frontend.handle import app as frontend_app
 from data.handle import app as data_app
@@ -15,8 +16,7 @@ app.add_subapp('/data', data_app)
 for route in list(app.router.routes()):
   cors.add(route)
 
-from mat4py import loadmat
-import numpy as np
+PORT = os.getenv(PORT) or 1234
 
 if __name__ == '__main__':
-  web.run_app(app, port=1234)
+  web.run_app(app, port=PORT)
