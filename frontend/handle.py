@@ -1,31 +1,51 @@
 from aiohttp import web
 import os
+import uuid
+import urllib.parse
+from xml.sax.saxutils import escape
+import json
 
 PLUGIN_NAME='fzj.xg.tvb_plugin'
 DISPLAY_NAME='TVB Parameter Visualiser (alpha)'
 HOSTNAME=os.getenv('HOSTNAME') or 'http://localhost:1234'
 
-def replace_var(input):
-  return input.replace('$$PLUGIN_NAME$$', PLUGIN_NAME).replace('$$HOSTNAME$$', HOSTNAME)
-
 template_path = os.path.join(os.path.dirname(__file__), 'res/template.html')
 with open(template_path, 'r') as f:
-  template = replace_var(f.read())
+  template = f.read()
 
 script_path = os.path.join(os.path.dirname(__file__), 'res/script.js')
 with open(script_path, 'r') as f:
-  script = replace_var(f.read())
+  script = f.read()
 
 routes = web.RouteTableDef()
 app = web.Application()
 
+def get_query_param(request):
+  selectedDataset = request.query.get('selectedDataset')
+  selectedFile = request.query.get('selectedFile')
+  selectedTrackIndex = request.query.get('selectedTrackIndex')
+  id = request.query.get('uuid')
+  return (selectedDataset, selectedFile, selectedTrackIndex, id)
+
 @routes.get('/manifest.json')
-async def handle_get_manifest(requests):
+async def handle_get_manifest(request):
+  selectedDataset, selectedFile, selectedTrackIndex, *rest = get_query_param(request)
+  id = str(uuid.uuid4())[:8]
+  query_param = dict(uuid=id)
+
+  if selectedDataset is not None:
+    query_param['selectedDataset'] = selectedDataset 
+  if selectedFile is not None:
+    query_param['selectedFile'] = selectedFile 
+  if selectedTrackIndex is not None:
+    query_param['selectedTrackIndex'] = selectedTrackIndex 
+
+  query_string = urllib.parse.urlencode(query_param)
   return web.json_response(dict(
-    name=PLUGIN_NAME,
+    name=f'{PLUGIN_NAME}-{id}',
     displayName=DISPLAY_NAME,
-    templateURL=f'{HOSTNAME}/frontend/template.html',
-    scriptURL=f'{HOSTNAME}/frontend/script.js'
+    templateURL=f'{HOSTNAME}/frontend/template.html?{query_string}',
+    scriptURL=f'{HOSTNAME}/frontend/script.js?{query_string}'
   ))
 
 http_txt_header = {
@@ -36,16 +56,32 @@ script_txt_header = {
   'Content-type': 'text/javascript; charset=utf-8'
 }
 
+def replace_vars(request, input):
+  selectedDataset, selectedFile, selectedTrackIndex, id = get_query_param(request)
+  plugin_name = f'{PLUGIN_NAME}-{id}'
+
+  if selectedDataset is not None and selectedFile is not None and selectedTrackIndex is not None:
+    attri_string = f'''
+  id="{plugin_name}.container"
+  static-flag=true
+  selected-dataset={escape(selectedDataset)}
+  selected-file={escape(selectedFile)}
+  selected-track-index={escape(selectedTrackIndex)}'''
+  else:
+    attri_string = f'''
+  id="{plugin_name}.container"'''
+  return input.replace('__PLUGIN_NAME__', json.dumps(plugin_name)).replace('__HOSTNAME__', json.dumps(HOSTNAME)).replace('tvb-param-placeholder', attri_string or '')
+
 @routes.get('/template.html')
-async def handle_get_template(requests):
+async def handle_get_template(request):
   return web.Response(
-    text=template if template is not None else '<span>template read not successful</span>',
+    text=replace_vars(request, template) if template is not None else '<span>template read not successful</span>',
     headers=http_txt_header)
 
 @routes.get('/script.js')
-async def handle_get_script(requests):
+async def handle_get_script(request):
   return web.Response(
-    text=script if script is not None else 'console.error("script read not successful")',
+    text=replace_vars(request, script) if script is not None else 'console.error("script read not successful")',
     headers=script_txt_header)
 
 app.router.add_routes(routes)
