@@ -5,20 +5,27 @@ const staticFlag = target.getAttribute('static-flag')
 const selectedFile = target.getAttribute('selected-file')
 const selectedDataset = target.getAttribute('selected-dataset')
 const selectedTrackIndex = target.getAttribute('selected-track-index')
+const selectedTrackIndices = target.getAttribute('selected-track-indices')
 
-const app = new App({
-  target,
-  props: {
-    staticFlag,
-    selectedFile,
-    selectedDataset,
-    selectedTrackIndex
-  }
-});
+let app
+interactiveViewer.pluginControl.loadExternalLibraries(['d3@5.7.0'])
+  .then(() => {
 
-interactiveViewer.pluginControl[__PLUGIN_NAME__].onShutdown(() => {
-  console.log(`onShutdown ${__PLUGIN_NAME__}`)
-  app.$destroy()
-})
+    app = new App({
+      target,
+      props: {
+        staticFlag,
+        selectedFile,
+        selectedDataset,
+        selectedTrackIndex,
+        selectedTrackIndices: selectedTrackIndices && selectedTrackIndices.split(',').map(v => Number(v)).filter(v => v !== NaN)
+      }
+    });
+
+    interactiveViewer.pluginControl[__PLUGIN_NAME__].onShutdown(() => {
+      console.log(`onShutdown ${__PLUGIN_NAME__}`)
+      app.$destroy()
+    })    
+  })
 
 export default app;

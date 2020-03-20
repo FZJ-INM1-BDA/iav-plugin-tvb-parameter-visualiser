@@ -2,6 +2,8 @@
   import { onMount } from 'svelte'
   import Selector from './Selector.svelte';
   import Graph from './Graph.svelte'
+  import Freq from './Freq.svelte'
+  import { getMinMax } from './util'
 
   export let datasetArray = []
   export let selectedDataset = null
@@ -11,8 +13,12 @@
 
   export let fetchedDataFromFile = []
 
-  export let staticFlag;
-  export let selectedTrackIndex;
+  export let staticFlag
+  export let selectedTrackIndex
+  export let selectedTrackIndices = []
+
+  const pinnedIndicesSet = new Set()
+  let pinnedIndices = []
 
   const fetchRoot = () => {
     datasetArray = []
@@ -54,16 +60,31 @@
       })
   }
 
+  function updateSelectedTractIndex(val) {
+    selectedTrackIndex = val
+    selectedTrackIndices = [ val ]
+  }
+
   function handleChangeIndex(ev) {
     const value = ev.detail.value
-    selectedTrackIndex = Number(value)
+    updateSelectedTractIndex(Number(value))
+  }
+
+  function pinIndex(){
+    pinnedIndicesSet.add(selectedTrackIndex)
+    pinnedIndices = Array.from(pinnedIndicesSet)
+  }
+
+  function removePin(item){
+    pinnedIndicesSet.delete(item)
+    pinnedIndices = Array.from(pinnedIndicesSet)
   }
 
   function pinGraph(){
     const url = new URL(`${__HOSTNAME__}/frontend/manifest.json`)
     url.searchParams.set('selectedDataset', selectedDataset)
     url.searchParams.set('selectedFile', selectedFile)
-    url.searchParams.set('selectedTrackIndex', selectedTrackIndex)
+    url.searchParams.set('selectedTrackIndices', selectedTrackIndices.join(','))
     
     fetch(url)
       .then(res => res.json())
@@ -114,7 +135,9 @@
             if (obj) {
               const layerIdx = /#([0-9]{1,})$/.exec(obj.segment)
               if (layerIdx) {
-                selectedTrackIndex = Number(layerIdx[1])
+                updateSelectedTractIndex(
+                  Number(layerIdx[1])
+                )
               }
             }
           }
@@ -182,24 +205,45 @@
       />
   </div>
 
+  <div class="d-flex pt-2 flex-row flex-wrap">
+    {#each pinnedIndices as pinnedIndex}
+    <div class="d-inline-block d-flex align-items-center">
+      <span>
+        {pinnedIndex}
+      </span>
+      <button on:click={() => removePin(pinnedIndex)} class="close">&times;</button>
+    </div>
+    {/each}
+  </div>
+
   <!-- Pin icon -->
-  {#if !staticFlag && fetchedDataFromFile[selectedTrackIndex]}
-  <div class="mt-2 btn btn-dark"
-    on:click={pinGraph}>
+  {#if !staticFlag}
+  <div class="mt-2 btn btn-dark {fetchedDataFromFile[selectedTrackIndex] ? '' : 'tvb-plugin-muted'}"
+    on:click={pinIndex}>
     <i class="fas fa-thumbtack"></i>
     <span>
-      Pin (alt/option + w)
+      { fetchedDataFromFile[selectedTrackIndex] ? 'Pin (alt/option + w)' : 'Hover or select area' }
     </span>
   </div>
   {/if}
 
   <!-- graph -->
   <div class="d-flex flex-column pt-2">
-    <Graph data={fetchedDataFromFile[selectedTrackIndex]} />
+    <Graph
+      datas={[...pinnedIndices, selectedTrackIndex].map(index => fetchedDataFromFile[index]).filter(v => !!v)}
+      yDomain={getMinMax(fetchedDataFromFile)}/>
+  </div>
+
+  <div class="d-flex pt-2">
+    <Freq
+      selectedDataset={selectedDataset}
+      selectedFile={selectedFile}
+      selectedTrackIndex={selectedTrackIndex}
+    />
   </div>
 
 </div>
-<svelte:window on:keydown={ev => !staticFlag && ev.code === 'KeyW' && ev.altKey && pinGraph() }/>
+<svelte:window on:keydown={ev => !staticFlag && ev.code === 'KeyW' && ev.altKey && pinIndex() }/>
 <style>
 .tvb-plugin-muted
 {

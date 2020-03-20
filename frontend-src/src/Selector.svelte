@@ -19,14 +19,26 @@
   <option value="null" disabled>
     -- select --
   </option>
-  {#if selectedVal}
-  <option value={selectedVal}>
-    {selectedVal}
-  </option>
-  {/if}
+
+  <!-- if inputlist is defined, is an array, and has length > 0 -->
+  {#if inputList && Array.isArray(inputList) && inputList.length > 0}
+
+  <!-- render each item in the list -->
   {#each inputList as item}
   <option value="{item}">
     {item}
   </option>
   {/each}
+
+  <!-- if inputList cannot be rednered -->
+  {:else}
+
+  <!-- if selectedVal is defined, render selected val -->
+  {#if selectedVal}
+  <option value={selectedVal}>
+    {selectedVal}
+  </option>
+  {/if}
+
+  {/if}
 </select>

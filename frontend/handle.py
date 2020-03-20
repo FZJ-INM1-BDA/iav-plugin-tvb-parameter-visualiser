@@ -23,13 +23,13 @@ app = web.Application()
 def get_query_param(request):
   selectedDataset = request.query.get('selectedDataset')
   selectedFile = request.query.get('selectedFile')
-  selectedTrackIndex = request.query.get('selectedTrackIndex')
+  selectedTrackIndices = request.query.get('selectedTrackIndices')
   id = request.query.get('uuid')
-  return (selectedDataset, selectedFile, selectedTrackIndex, id)
+  return (selectedDataset, selectedFile, selectedTrackIndices, id)
 
 @routes.get('/manifest.json')
 async def handle_get_manifest(request):
-  selectedDataset, selectedFile, selectedTrackIndex, *rest = get_query_param(request)
+  selectedDataset, selectedFile, selectedTrackIndices, *rest = get_query_param(request)
   id = str(uuid.uuid4())[:8]
   query_param = dict(uuid=id)
 
@@ -37,8 +37,8 @@ async def handle_get_manifest(request):
     query_param['selectedDataset'] = selectedDataset 
   if selectedFile is not None:
     query_param['selectedFile'] = selectedFile 
-  if selectedTrackIndex is not None:
-    query_param['selectedTrackIndex'] = selectedTrackIndex 
+  if selectedTrackIndices is not None:
+    query_param['selectedTrackIndices'] = selectedTrackIndices 
 
   query_string = urllib.parse.urlencode(query_param)
   return web.json_response(dict(
@@ -57,16 +57,16 @@ script_txt_header = {
 }
 
 def replace_vars(request, input):
-  selectedDataset, selectedFile, selectedTrackIndex, id = get_query_param(request)
+  selectedDataset, selectedFile, selectedTrackIndices, id = get_query_param(request)
   plugin_name = f'{PLUGIN_NAME}-{id}'
 
-  if selectedDataset is not None and selectedFile is not None and selectedTrackIndex is not None:
+  if selectedDataset is not None and selectedFile is not None and selectedTrackIndices is not None:
     attri_string = f'''
   id="{plugin_name}.container"
   static-flag=true
   selected-dataset={escape(selectedDataset)}
   selected-file={escape(selectedFile)}
-  selected-track-index={escape(selectedTrackIndex)}'''
+  selected-track-indices={escape(selectedTrackIndices)}'''
   else:
     attri_string = f'''
   id="{plugin_name}.container"'''

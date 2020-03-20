@@ -1,8 +1,9 @@
 <script>
   import { onMount, beforeUpdate } from 'svelte'
+  import { getRandomColor, getMinMax } from './util'
   let graphContainer
 
-  export let data;
+  export let datas
 
   let mountD3Pr
 
@@ -13,8 +14,11 @@
     bottom: 20
   }
 
+  export let yDomain
+
+
   beforeUpdate(() => {
-    if (data && graphContainer) {
+    if (datas && graphContainer) {
       while(graphContainer.children[0]) {
         graphContainer.removeChild(graphContainer.children[0])
       }
@@ -24,10 +28,9 @@
       const height = graphContainer.clientHeight - marginTop - marginBottom
       
       const scaleX = d3.scaleLinear().range([0, width])
-      const scaleY = d3.scaleLinear().range([0, height])
-      const line = d3.line()
-        .x(d => scaleX(d.x))
-        .y(d => scaleY(d.y))
+
+      // have the Y axis right side up
+      const scaleY = d3.scaleLinear().range([height, 0])
 
       const svg = d3.select(graphContainer)
         .append('svg')
@@ -36,16 +39,27 @@
         .append('g')
           .attr('transform', `translate(${marginLeft}, ${marginTop})`)
 
-      scaleX.domain([0, data.length])
-      scaleY.domain(d3.extent( data ))
+      const maxX = d3.max(
+        datas.map(v => v.length)
+      )
+      scaleX.domain([0, maxX])
+      scaleY.domain(
+        yDomain || getMinMax(datas)
+      )
 
-      svg.append('path')
-        .attr('fill', 'none')
-        .attr('stroke-width', '1px')
-        .attr('stroke', 'steelblue')
-        .data([ data.map((v, i) => ({ x: i, y: v })) ])
-        .attr('d', line)
+      for (const index in datas) {
 
+        const line = d3.line()
+          .x(d => scaleX(d.x))
+          .y(d => scaleY(d.y))
+
+        svg.append('path')
+          .attr('fill', 'none')
+          .attr('stroke-width', '1px')
+          .attr('stroke', getRandomColor(index))
+          .data([ datas[index].map((v, i) => ({ x: i, y: v })) ])
+          .attr('d', line)
+      }
 
       // Add the X Axis
       svg.append("g")
@@ -68,12 +82,12 @@
     }
   })
 </script>
-{#if data}
+{#if datas && datas.length > 0}
 <div bind:this={graphContainer} class="graph-container">
 </div>
 {:else}
 <div>
-  No data to display
+  No datas to display
 </div>
 {/if}
 <style>
