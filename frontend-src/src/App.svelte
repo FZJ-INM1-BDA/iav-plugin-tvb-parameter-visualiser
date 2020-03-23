@@ -234,13 +234,13 @@
       yDomain={getMinMax(fetchedDataFromFile)}/>
   </div>
 
-  <div class="d-flex pt-2">
+  <!-- <div class="d-flex pt-2">
     <Freq
       selectedDataset={selectedDataset}
       selectedFile={selectedFile}
       selectedTrackIndex={selectedTrackIndex}
     />
-  </div>
+  </div> -->
 
 </div>
 <svelte:window on:keydown={ev => !staticFlag && ev.code === 'KeyW' && ev.altKey && pinIndex() }/>
