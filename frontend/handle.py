@@ -45,7 +45,10 @@ async def handle_get_manifest(request):
     name=f'{PLUGIN_NAME}-{id}',
     displayName=DISPLAY_NAME,
     templateURL=f'{HOSTNAME}/frontend/template.html?{query_string}',
-    scriptURL=f'{HOSTNAME}/frontend/script.js?{query_string}'
+    scriptURL=f'{HOSTNAME}/frontend/script.js?{query_string}',
+    description=f'Prototype plugin showing parameters of TVB in IAV.',
+    homepage='https://ebrains.eu/',
+    authors='Xiaoyun Gui <x.gui@fz-juelich.de>, with guidance from Timo Dickscheid, assitance from Victor Jirsa.'
   ))
 
 http_txt_header = {

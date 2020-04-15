@@ -88,7 +88,7 @@ async def get_tf_plot(request):
     kg_dataset_id, filename, dk_label_index = get_query_param(request)
     data = await dl_mat_and_return_array(kg_dataset_id, filename)
     x = data[int(dk_label_index), :].reshape(1, -1)
-    
+
     '''
     Victor's recommendation was:
     
@@ -97,15 +97,36 @@ async def get_tf_plot(request):
 
     But this resulted in complaining that the arg needs be strictly between 0 and 1
     '''
-    b, a = butter(2, np.r_[0.01, 0.95]/fs, 'pass')
-    x = lfilter(b, a, x)
-    W = np.r_[0.1:150:200j]
-    continuous_w=cwt(x[0], morlet2, W)
-    X = np.abs(continuous_w)
+    # b, a = butter(2, np.r_[0.01, 0.95]/fs, 'pass')
+    # x = lfilter(b, a, x)
+    # W = np.r_[0.1:150:200j]
+    # continuous_w=cwt(x[0], morlet2, W)
+    # X = np.abs(continuous_w)
 
+    '''
+    Attempt #2
+
+    From Marmaduke/Victor
+    '''
+
+    # # Morlet filter design
+
+    f = 0.2
+
+    # M = x.shape[1]
+    fs = 1.0
+    w = 25
+    # # x = morlet2(s.shape[1], s = w*fs / (2*f*np.pi), w=w)
+    # F = np.fft.fftfreq(M, d=1.0/fs)
+
+    freqs = np.r_[0.2:0.4:100j]#np.exp(np.r_[-5.0:-0.1:150j])
+    # print('filters from', freqs[0], 'Hz to ', freqs[-1], 'Hz')
+    widths = [w*fs / (2*f*np.pi) for f in freqs]
+    X = cwt(x[0], morlet2, widths, w=w)
+    X_ = np.log(np.abs(X))
     with tempfile.TemporaryFile(suffix='.png') as t_file:
       fig = plt.figure()
-      plt.imshow(X, aspect='auto', extent=[0, tf, 0, 1])
+      plt.imshow(X_, aspect='auto')
       fig.savefig(t_file, format='png')
       t_file.seek(0)
       img_file = t_file.read()
