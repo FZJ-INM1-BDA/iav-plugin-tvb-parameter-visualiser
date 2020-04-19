@@ -73,11 +73,9 @@
   })
 
   onMount(() => {
-    console.log('mounting graph.svelte')
     mountD3Pr = interactiveViewer.pluginControl.loadExternalLibraries(['d3@5.7.0'])
 
     return () => {
-      console.log('unmounting graph.svelte')
       interactiveViewer.pluginControl.unloadExternalLibraries(['d3@5.7.0'])
     }
   })

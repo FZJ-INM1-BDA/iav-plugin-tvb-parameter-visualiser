@@ -17,6 +17,8 @@
   export let selectedTrackIndex
   export let selectedTrackIndices = []
 
+  let ngLayername
+
   const pinnedIndicesSet = new Set()
   let pinnedIndices = []
 
@@ -70,14 +72,23 @@
     updateSelectedTractIndex(Number(value))
   }
 
-  function pinIndex(){
-    pinnedIndicesSet.add(selectedTrackIndex)
+  function pinIndex(idx){
+    pinnedIndicesSet.add(idx)
     pinnedIndices = Array.from(pinnedIndicesSet)
   }
 
   function removePin(item){
     pinnedIndicesSet.delete(item)
     pinnedIndices = Array.from(pinnedIndicesSet)
+  }
+
+  function pinIndexFromMouseover(){
+    togglePinIndex(selectedTrackIndex)
+  }
+
+  function togglePinIndex(index) {
+    if (pinnedIndicesSet.has(index)) removePin(index)
+    else pinIndex(index)
   }
 
   function pinGraph(){
@@ -91,6 +102,29 @@
       .then(manifest => {
         interactiveViewer.uiHandle.launchNewWidget(manifest)
       })
+  }
+
+  async function getUserToSelectRegion() {
+    await new Promise((rs) => setTimeout(rs, 1000))
+    while(true) {
+      try {
+        const regionObj = await interactiveViewer.uiHandle.getUserToSelectARegion(`TVB IAV plugin: click any region to toggle pin region`)
+        const { layer, segment } = regionObj || {}
+        const { name } = layer || {}
+        if (ngLayername && name === ngLayername) {
+          const idx = segment && segment.replace && segment.replace(ngLayername, '')
+          const regexCheck = /^#[1-9][0-9]*$/.test(idx)
+          if (regexCheck) {
+            const num = Number(idx.replace('#', ''))
+            togglePinIndex(num)
+          } else {
+            console.log('does not check out', idx)
+          }
+        }
+      } catch (e) {
+
+      }
+    }
   }
     
   onMount(() => {
@@ -114,12 +148,15 @@
 
       fetchRoot()
 
+      getUserToSelectRegion()
+
       interactiveViewer.viewerHandle.setLayerVisibility({
         name: /jubrain/
       }, false)
 
       const obj = {}
-      obj[`${__PLUGIN_NAME__}-DK68`] = {
+      ngLayername = `${__PLUGIN_NAME__}-DK68`
+      obj[ngLayername] = {
         type: 'segmentation',
         source: `nifti://${__HOSTNAME__}/data/public/aparcaseg.nii.gz`,
         selectedOpacity: 0.5
@@ -219,10 +256,10 @@
   <!-- Pin icon -->
   {#if !staticFlag}
   <div class="mt-2 btn btn-dark {fetchedDataFromFile[selectedTrackIndex] ? '' : 'tvb-plugin-muted'}"
-    on:click={pinIndex}>
+    on:click={pinIndexFromMouseover}>
     <i class="fas fa-thumbtack"></i>
     <span>
-      { fetchedDataFromFile[selectedTrackIndex] ? 'Pin (alt/option + w)' : 'Hover or select area' }
+      { fetchedDataFromFile[selectedTrackIndex] ? 'Pin (click to toggle)' : 'Hover or select area' }
     </span>
   </div>
   {/if}
@@ -243,7 +280,6 @@
   </div>
 
 </div>
-<svelte:window on:keydown={ev => !staticFlag && ev.code === 'KeyW' && ev.altKey && pinIndex() }/>
 <style>
 .tvb-plugin-muted
 {

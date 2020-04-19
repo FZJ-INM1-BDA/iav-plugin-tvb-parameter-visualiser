@@ -7,6 +7,12 @@ import numpy as np
 import os
 from scipy.signal import butter, lfilter, cwt, morlet2
 import matplotlib.pyplot as plt
+import matplotlib
+
+plt.rc('axes', edgecolor='w', facecolor='w', labelcolor='w')
+plt.rc('text', color='w')
+plt.rc('xtick', color='w')
+plt.rc('ytick', color='w')
 
 routes = web.RouteTableDef()
 app = web.Application()
@@ -127,7 +133,7 @@ async def get_tf_plot(request):
     with tempfile.TemporaryFile(suffix='.png') as t_file:
       fig = plt.figure()
       plt.imshow(X_, aspect='auto')
-      fig.savefig(t_file, format='png')
+      fig.savefig(t_file, format='png', transparent=True)
       t_file.seek(0)
       img_file = t_file.read()
       plt.close()
